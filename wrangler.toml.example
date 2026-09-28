@@ -1,0 +1,19 @@
+# Cloudflare Workers = target OPSIONAL. Project ini jalan tanpa Cloudflare.
+#
+# Pakai:  cp wrangler.toml.example wrangler.toml  lalu edit name + account_id
+# Lalu:   npx wrangler secret put API_KEY
+#
+# File wrangler.toml yang sudah diedit TIDAK BOLEH di-commit (lihat .gitignore).
+
+name = "kalender-api"
+main = "src/worker/index.ts"
+
+# Jangan diubah tiap deploy. Tanggal ini mengunci perilaku runtime Workers
+# dan Hono; kalau berubah, kode bisa berubah hasil tanpa ada yang mengubah kode.
+compatibility_date = "2026-09-28"
+
+# isi dengan account id Cloudflare lo
+account_id = ""
+
+[observability]
+enabled = true

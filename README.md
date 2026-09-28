@@ -1,127 +1,108 @@
 # Kalender API
 
-REST API untuk data **kalender nasional Indonesia**: hari libur nasional, cuti bersama,
-dan hari peringatan nasional.
+REST API untuk data **kalender nasional Indonesia**: hari libur nasional dan cuti
+bersama yang ditetapkan SKB 3 Menteri.
 
 Berguna untuk aplikasi payroll, sistem shift, kalender akademik, dan fitur booking
-hitung mundur — tanpa harus hard-code tabel libur setiap tahun.
+hitung mundur - tanpa harus hard-code tabel libur setiap tahun.
 
-## Fitur
+## Satu Data, Tiga Jalur
 
-- **Hari libur nasional** — Tanggal tetap maupun hari raya religious yang mengikuti
-  kalender Hijriah, Saka Bali, dan Kongzili (lihat tabel di bawah).
-- **Cuti bersama** — Libur tambahan yang ditetapkan melalui SKB 3 Menteri
-  (Kementerian Agama, Kementerian Ketenagakerjaan, dan Kementerian Pendayagunaan
-  Aparatur Negara dan Reformasi Birokrasi) setiap tahun.
-- **Hari peringatan** — Hari besar nasional non-libur seperti Hari Kartini dan
-  Hari Prahariptidek.
-- **Cek tanggal** — Periksa apakah sebuah tanggal merupakan hari libur, cuti bersama,
-  akhir pekan, atau hari kerja biasa.
-- **Data siap pakai** — Tanggal sudah dalam format ISO 8601 (`YYYY-MM-DD`) beserta nama
-  dalam Bahasa Indonesia.
-- **Tanpa API key** — Endpoint publik, langsung pakai.
+Proyek ini satu sumber data dengan tiga cara distribusi. Isinya sama persis, yang
+berbeda cuma cara menjangkaunya:
 
-## Jenis Hari Libur
+| Jalur | Untuk siapa | Cara pakai |
+| --------------------- | ---------------------------------- | ------------------------------------------------- |
+| **JSON statis** | Github Pages, tanpa server | `GET /holidays-2026.json` |
+| **Cloudflare Worker** | API dengan API key | `GET /api/holidays?year=2026` |
+| **Docker / Node** | Server sendiri | `GET /api/holidays?year=2026` |
 
-Nilai `type` pada setiap entri menunjukkan kategori libur:
+JSON statis tidak butuh account, tidak butuh API key, dan tidak bisa rate-limit.
+Kalau cuma butuh daftar libur, ambil yang statis.
 
-| Nilai        | Arti                                                                 |
-| ------------ | ------------------------------------------------------------------- |
-| `holiday`    | Hari libur nasional — wajib cuti sesuai hukum ketenagakerjaan.       |
-| `leave`      | Cuti bersama — cuti tambahan yang ditetapkan SKB 3 Menteri.          |
-| `observance` | Hari peringatan nasional — tidak otomatis menjadi hari libur.       |
+## Data yang Tersedia
 
-### Daftar Hari Libur Nasional
+| Tahun | Jumlah | Sumber |
+| ---- | ------ | ------ |
+| 2026 | 25 hari (17 libur nasional + 8 cuti bersama) | SKB 1497/2025, 2/2025, 5/2025 |
 
-Tanggal **tetap** bisa dihitung langsung; tanggal **bergerak** harus ditentukan dari
-kalender yang berlaku dan bisa bergeser beberapa hari tiap tahun.
+**2024 dan 2025 sengaja tidak tersedia.** SKB untuk kedua tahun itu punya SKB
+perubahan (amandemen) yang mengubah tanggal. Data yang salah lebih berbahaya
+daripada data yang tidak ada, jadi kedua tahun itu ditahan sampai amandemennya
+sudah dipastikan. Endpoint mengembalikan `404` untuk tahun yang tidak ada -
+bukan array kosong, karena array kosong berarti "tahun ini memang tanpa libur"
+dan itu makna yang berbeda.
 
-| No | Nama | Tanggal | Kalender | Status |
-| -- | ---- | ------- | -------- | ------ |
-| 1  | Tahun Baru Masehi | 1 Januari | Gregory | Tetap |
-| 2  | Tahun Baru Imlek | Bergerak | Kongzili/Tionggu | Bergerak |
-| 3  | Isra Mikraj Nabi Muhammad | Bergerak | Hijriah | Bergerak |
-| 4  | Hari Suci Nyepi (Tahun Baru Saka) | Bergerak | Saka Bali | Bergerak |
-| 5  | Wafat Isa Almasih | Bergerak | Gregory (Jumat Agung) | Bergerak |
-| 6  | Hari Buruh Internasional | 1 Mei | Gregory | Tetap |
-| 7  | Kenaikan Isa Almasih | Bergerak | Gregory | Bergerak |
-| 8  | Hari Raya Idul Fitri | 1 Syawal | Hijriah | Bergerak |
-| 9  | Hari Raya Waisak | Bergerak | Buddha | Bergerak |
-| 10 | Hari Lahir Pancasila | 1 Juni | Gregory | Tetap |
-| 11 | Hari Raya Idul Adha | 10 Dzulhijjah | Hijriah | Bergerak |
-| 12 | Tahun Baru Islam | 1 Muharram | Hijriah | Bergerak |
-| 13 | Hari Kemerdekaan RI | 17 Agustus | Gregory | Tetap |
-| 14 | Maulid Nabi Muhammad | 12 Rabiul Awal | Hijriah | Bergerak |
-| 15 | Hari Raya Natal | 25 Desember | Gregory | Tetap |
+Per tahun: tidak ada `holidays-all.json`. Alasannya bukan ukuran file, tapi
+klien yang menyimpan satu blob tidak bisa membedakan "tahun ini tidak ada
+liburnya" dari "tahun ini tidak ada di dalam blob". Dengan satu file per tahun,
+ketiadaan itu kelihatan sebagai `404`, dan koreksi cuma menyentuh satu file.
 
-## Konsep Data
+## Kontrak Data
 
-Setiap entri hari libur mengikuti struktur berikut:
+Setiap entri:
 
 ```json
 {
   "date": "2026-08-17",
-  "name": "Hari Kemerdekaan Republik Indonesia",
+  "name": "Proklamasi Kemerdekaan Republik Indonesia",
   "type": "holiday",
   "is_holiday": true,
-  "is_joint_holiday": false,
-  "description": "Hari Proklamasi Kemerdekaan Republik Indonesia"
+  "is_joint_holiday": false
 }
 ```
 
-Field `date` selalu dalam format `YYYY-MM-DD` (ISO 8601, kalender Masehi) agar mudah
-diproses oleh bahasa pemrograman maupun basis data.
+Field `date` selalu `YYYY-MM-DD` (ISO 8601, kalender Masehi) supaya langsung bisa
+diolah bahasa pemrograman maupun basis data.
 
-Nilai `type` yang mungkin muncul:
+Nilai `type`:
 
-| Nilai        | Arti                                                                 |
-| ------------ | ------------------------------------------------------------------- |
-| `holiday`    | Hari libur nasional — wajib cuti sesuai hukum ketenagakerjaan.       |
-| `leave`      | Cuti bersama — cuti tambahan yang ditetapkan SKB 3 Menteri.          |
-| `observance` | Hari peringatan nasional — tidak otomatis menjadi hari libur.       |
+| Nilai | Arti |
+| ------------ | ------------------------------------------------------------- |
+| `holiday` | Hari libur nasional. |
+| `leave` | Cuti bersama dari SKB 3 Menteri. |
+| `observance` | Hari peringatan nasional, bukan hari libur. |
 
-### Field boolean
+Catatan jujur: sampai 2026, seluruh entri di repo ini `holiday` atau `leave`.
+Nilai `observance` sudah ada di tipe dan validator, tapi belum ada data yang
+memakainya, dan tidak akan diisi sampai ada sumber resmi yang menjadwalkannya.
 
-`type` memberi kategori, sedangkan dua field boolean menjawab pertanyaan yang paling
-sering dipakai klien — "apakah tanggal ini hari bebas kerja?":
+Dua field boolean menjawab pertanyaan yang paling sering dipakai klien:
 
-| Field              | `true` ketika...                                     |
-| ------------------ | ---------------------------------------------------- |
-| `is_holiday`       | Tanggal adalah hari libur nasional (`type: holiday`). |
-| `is_joint_holiday` | Tanggal adalah cuti bersama (`type: leave`).          |
+| Field | `true` ketika... |
+| ------------------ | -------------------------------------------------- |
+| `is_holiday` | Tanggal adalah hari libur nasional (`type: holiday`). |
+| `is_joint_holiday` | Tanggal adalah cuti bersama (`type: leave`). |
 
-Keduanya **tidak pernah** bernilai `true` bersamaan, dan untuk `type: observance`
-keduanya bernilai `false`. Jadi satu baris kode ini selalu cukup:
+Keduanya **tidak pernah** `true` bersamaan. Jadi satu baris ini selalu cukup:
 
 ```js
 const isDayOff = holiday.is_holiday || holiday.is_joint_holiday;
 ```
 
-## Contoh Penggunaan
+Validator menolak file yang melanggar aturan ini, jadi sebuah file di
+`data/` yang lolos build memang konsisten.
 
-### Semua hari libur satu tahun
+## Endpoint
 
-```
-GET /api/holidays?year=2026
+`/api/*` butuh API key kecuali `/api/years` dan `/health`.
+
+| Endpoint | Tanpa key | Keterangan |
+| -------------------------------- | --------- | ------------------------------------------ |
+| `GET /health` | Ya | Untuk uptime monitor. |
+| `GET /api/years` | Ya | Manifest tahun yang tersedia. |
+| `GET /api/holidays?year=&month=` | Tidak | Daftar libur. Tanpa filter sama dengan file statis. |
+| `GET /api/check?date=` | Tidak | Cek satu tanggal. |
+| `GET /api/upcoming?limit=&from=` | Tidak | Libur terdekat. `from` inklusif. |
+
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+  "https://host/api/holidays?year=2026&month=8"
 ```
 
-### Hari libur pada bulan tertentu
-
-```
-GET /api/holidays?year=2026&month=8
-```
-
-### Cek satu tanggal
-
-```
-GET /api/check?date=2026-08-17
-```
-
-### Libur yang akan datang
-
-```
-GET /api/upcoming?limit=5
-```
+`/api/holidays?year=2026` tanpa `month` mengembalikan objek yang identik dengan
+`holidays-2026.json`. Itu bukan kebetulan: file statis dan response API memakai
+envelope yang sama, dan build menyalinnya apa adanya.
 
 ### Contoh respons
 
@@ -131,36 +112,70 @@ GET /api/upcoming?limit=5
   "data": [
     {
       "date": "2026-08-17",
-      "name": "Hari Kemerdekaan Republik Indonesia",
+      "name": "Proklamasi Kemerdekaan Republik Indonesia",
       "type": "holiday",
       "is_holiday": true,
-      "is_joint_holiday": false,
-      "description": "Hari Proklamasi Kemerdekaan Republik Indonesia"
+      "is_joint_holiday": false
     }
   ],
   "meta": {
     "year": 2026,
-    "count": 1,
-    "last_updated": "2026-01-05T00:00:00Z"
+    "count": 25,
+    "source": "SKB Menteri Agama, Ketenagakerjaan, dan PANRB No. 1497/2025, 2/2025, 5/2025",
+    "published": "2025-09-19",
+    "last_updated": "2026-09-28"
   }
 }
 ```
 
+Semua respons - termasuk file statis - memakai envelope `success`, `data`, `meta`.
+Respons gagal memakai `success: false` dan `error.message` yang menyebut
+penyebabnya, termasuk tahun yang diminta dan tahun yang tersedia.
+
+## Dokumentasi Interaktif
+
+Buka `http://localhost:3001` setelah server jalan. Halamannya Bahasa Indonesia:
+cara setup, daftar endpoint, parameter, contoh curl dan JavaScript, kode error,
+dan cara memakai jalur JSON statis tanpa API key.
+
+## Menjalankan
+
+```bash
+npm install
+cp .env.example .env      # isi API_KEY
+npm run dev               # http://localhost:3001
+```
+
+`npm run dev` melakukan build dulu lalu menjalankan hasilnya. Build step wajib
+karena Node tidak bisa mengubah JSX tanpa bundler, dan halaman dokumentasi
+memakai JSX. Untuk produksi: `npm run build`, lalu `npm start`.
+
+Untuk menghasilkan JSON statis:
+
+```bash
+npm run build:static      # -> dist/
+```
+
+`dist/` berisi salinan byte-identik file di `data/`, plus `index.json` sebagai
+manifest. Kalau ada satu file yang tidak valid, build berhenti dan `dist/` tidak
+sama sekali ditulis - bukan ditulis sebagian.
+
 ## Catatan Sumber Data
 
-Jadwal hari libur nasional Indonesia berubah setiap tahun dan ditetapkan melalui
-**SKB 3 Menteri** (Kementerian Agama, Kementerian Ketenagakerjaan, dan Kementerian
-Pendayagunaan Aparatur Negara dan Reformasi Birokrasi). Karena itu, data untuk tahun
-berikutnya **tidak selalu tersedia di awal tahun** dan bisa saja berubah menjelang hari-H.
+Jadwal hari libur nasional ditetapkan melalui **SKB 3 Menteri** (Kementerian
+Agama, Kementerian Ketenagakerjaan, dan Kementerian Pendayagunaan Aparatur
+Negara dan Reformasi Birokrasi), dan **ditulis tangan** dari SKB tersebut. Tidak
+ada generator tanggal: hasil hitungan bisa meleset satu-dua hari dari SKB, dan
+SKB yang benar.
 
-Sebaiknya lakukan cache pada sisi klien dan selalu periksa field `meta.last_updated`
-pada respons.
+Artinya daftar ini bisa saja belum final untuk tahun berikutnya. Periksa
+`meta.published` dan cache di sisi klien.
 
-## Status Proyek
+## Kontribusi
 
-Repositori ini masih tahap awal. Endpoint di atas merupakan rancangan kontrak API
-yang akan diimplementasikan secara bertahap.
+Kirim PR kalau punya SKB untuk tahun yang belum ada di sini. Sertakan nomor SKB
+dan tanggal verifikasi - data tanpa sumber tidak akan diterima.
 
 ## Lisensi
 
-[MIT](LICENSE) © 2026 Maulana Muhammad Rifqi
+[MIT](LICENSE) (c) 2026 Maulana Muhammad Rifqi

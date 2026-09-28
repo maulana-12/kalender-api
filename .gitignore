@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+*.log
+
+# Config per-machine / per-deployment. Salin dari .example, jangan di-commit.
+.env
+wrangler.toml
+.wrangler/
+
+.DS_Store
