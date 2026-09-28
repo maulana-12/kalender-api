@@ -1,0 +1,29 @@
+{
+  "id": 5835,
+  "name": "github-action-page",
+  "target": "actions",
+  "source_type": "Repository",
+  "source": "{username}/{reponame}",
+  "enforcement": "active",
+  "conditions": {
+    "workflow_path": {
+      "exclude": [],
+      "include": [
+        ".github/workflows/pages.yml"
+      ]
+    }
+  },
+  "rules": [
+    {
+      "type": "restrict_action_events",
+      "parameters": {
+        "allowed_events": [
+          "push",
+          "release",
+          "workflow_dispatch"
+        ]
+      }
+    }
+  ],
+  "bypass_actors": []
+}
