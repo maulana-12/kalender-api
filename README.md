@@ -151,9 +151,8 @@ git tag v0.1.1-github
 git push origin main --follow-tags
 ```
 
-Tag dan versi di `package.json` harus cocok; workflow menolak kalau tidak. Tag
-akhiran `-github` menandai channel distribusi, jadi tag lain dengan versi sama
-tidak menyentuh Pages.
+Tag akhiran `-github` menandai channel distribusi, jadi tag lain dengan versi
+yang sama tidak menyentuh Pages.
 
 Kalau repo ini di-fork, set Pages ke Source: GitHub Actions dulu. Tanpa itu
 workflow-nya tetap ada tapi tidak ter-deploy.

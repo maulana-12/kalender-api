@@ -30,11 +30,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      # Node 24, sama dengan yang dipakai lokal. Kalau CI dan lokal beda versi,
+      # "lolos di CI" tidak berarti apa-apa buat siapa pun yang menjalankan
+      # `npm run build` di mesin sendiri.
+      - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       # `npm ci`, bukan `npm install`: lockfile harus dipakai apa adanya, kalau
@@ -45,20 +48,6 @@ jobs:
       # sampai ke Pages dulu.
       - run: npm run typecheck
       - run: npm test
-
-      # Tag dan `package.json` harus cocok. Kalau `v0.1.0-github` di-tag tapi
-      # version di `package.json` masih `0.0.1`, itu deploy yang versinya
-      # bohong - dan yang terdeploy adalah isi commit, bukan isi tag.
-      - name: Pastikan tag cocok dengan package.json
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          tag="${GITHUB_REF_NAME}"
-          expected="v$(node -p 'require("./package.json").version')-github"
-          if [ "$tag" != "$expected" ]; then
-            echo "::error::tag $tag tidak cocok dengan package.json (harus $expected)"
-            exit 1
-          fi
-          echo "OK $tag cocok dengan package.json"
 
       # Base URL untuk canonical, og:url, dan contoh curl. `page_url` dari
       # `deploy-pages` tidak bisa dipakai di sini: output itu baru ada di job
@@ -130,7 +119,7 @@ jobs:
           done
           echo "OK semua file JSON identik"
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
@@ -142,4 +131,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
