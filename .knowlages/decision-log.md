@@ -8,6 +8,63 @@ Format entri: ID, Judul, Status, Tanggal, Konteks, Keputusan, Konsekuensi, Alter
 
 ---
 
+## D-015 - Static page punya komponen sendiri, bukan render ulang docs server
+
+- **Status:** Accepted
+- **Tanggal:** 2026-09-28
+
+**Konteks**
+Setelah dokumentasi server ada di `/`, pertanyaannya apakah GitHub Pages bisa
+memakai halaman yang sama. Secara teknis bisa: `render()` yang sama dipanggil
+dari mana saja. Tapi halaman itu menjelaskan endpoint, header `Authorization`,
+dan kode error HTTP. Tidak satu pun ada di Pages.
+
+GitHub Pages tidak menjalankan Node. Tidak ada server, tidak ada auth, tidak
+ada request. Yang terjadi hanya "buka file". Kalau halaman server dipakai
+apa adanya, pembaca akan mencari `Authorization: Bearer` di halaman yang
+justru tidak butuh key sama sekali.
+
+**Keputusan**
+Komponen terpisah, `src/pages/static.tsx`. Generator terpisah juga,
+`scripts/build-static-page.ts`.
+
+Generator tidak boleh digabung ke `build-static.ts` karena `AGENTS.md` bagian 1
+menetapkan `build-static.ts` sebagai "validasi lalu salin `data/`" yang tidak
+menyentuh Hono. `index.html` justru Hono JSX. Menggabungkannya berarti satu file
+dengan dua tanggung jawab, dan `dist/` jadi punya dua penulis.
+
+Yang sama persis antara dua halaman cuma stylesheet, dan menyalin 30 baris CSS
+lebih murah daripada membuat file CSS yang cuma dipakai dua halaman.
+
+Seluruh link di static page RELATIF. Halaman ini tidak tahu domain-nya, jadi
+`https://` absolut akan rusak begitu repo-nya di-fork. Test menjaga ini.
+
+Tahun yang ditampilkan dibaca dari `dist/index.json`, bukan dari konstanta.
+Kalau nanti 2027 dipublikasikan, halaman ikut berubah tanpa disentuh. Kalau
+jumlah entri antar tahun berbeda, generator gagal keras, bukan menampilkan
+satu angka untuk semua tahun.
+
+**Konsekuensi**
+`dist/` sekarang punya tiga jenis file: JSON (byte-identik dengan `data/`),
+`index.json` (manifest), dan `index.html` (dokumen). Aturan berbeda, tapi
+satu direktori. Itu trade-off yang diterima: GitHub Pages butuh root tunggal,
+dan hosting static seperti Pages memakai satu direktori sebagai root.
+
+Nol dependency baru. `hono/html` dan `hono/jsx` sudah dipakai. `esbuild` sudah
+devDependency untuk `build-server.ts`. Node butuh
+`--experimental-strip-types` untuk menjalankan generator karena JSX harus
+di-bundle lebih dulu oleh esbuild.
+
+**Alternatif**
+Render ulang `docs.tsx` yang sama (ditolak: isinya salah sasaran, lihat
+alasan di atas).
+Menyimpan `index.html` di `data/` supaya ikut tercopy (ditolak: `data/` hanya
+untuk data, dan aturan byte-identik jadi tidak berlaku untuk semua file).
+Markdown di dalam HTML dengan `<script>` kecil untuk render (ditolak:
+dependensi runtime di halaman yang justru harus pure static).
+
+---
+
 ## D-014 - Halaman dokumentasi pakai hono/jsx, bukan React
 
 - **Status:** Accepted

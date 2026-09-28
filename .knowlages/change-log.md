@@ -9,6 +9,55 @@ Mencatat perubahan pada **isi repo**. Untuk alasan di balik keputusan, lihat
 
 ---
 
+## 2026-09-28 - Static page untuk GitHub Pages, nol dependency baru
+
+**Perubahan**
+
+- `src/pages/static.tsx` - dokumentasi untuk distribusi statis. Sengaja beda dari
+  `docs.tsx`: menjelaskan file dan cara membacanya, bukan endpoint dan header auth.
+  Semua link relatif supaya tidak rusak saat repo di-fork.
+- `scripts/build-static-page.ts` - render ke `dist/index.html`. Script terpisah,
+  bukan digabung ke `build-static.ts`, karena `AGENTS.md` bagian 1 melarang
+  `build-static.ts` menyentuh Hono.
+- `test/static-page.test.ts` - 8 test, total 61.
+- `.github/workflows/pages.yml` - typecheck, test, build statis, guard
+  byte-identik, upload `dist/`, deploy.
+- `.gitignore` - `wrangler.toml` jadi `wrangler*.toml` plus `!*.example`, ditambah
+  `.dev.vars` dan `.dev.vars.*`. Variasi seperti `wrangler.dev.toml` sebelumnya bocor.
+- `package.json` - script `build:static-page`, dan masuk ke `build`.
+
+**Kenapa halaman baru, bukan pakai yang ada**
+
+GitHub Pages tidak menjalankan Node: tidak ada server, tidak ada auth, tidak ada
+request. Halaman server menyebut `Authorization: Bearer` dan kode error HTTP,
+padahal tidak satu pun berlaku di sana. Dua produk dengan aturan berbeda perlu
+dua dokumen.
+
+**Guard di CI**
+
+Workflow membandingkan tiap `data/holidays-*.json` dengan `dist/` pakai `cmp`
+sebelum upload. Kalau `build-static` pernah berubah bentuk sampai mengubah byte,
+deploy berhenti di situ, bukan diam-diam meng-upload data yang berubah.
+
+Tahun dan jumlah entri dibaca dari `dist/index.json`, bukan dari konstanta.
+Jumlah entri yang berbeda antar tahun membuat generator gagal keras.
+
+**Verifikasi**
+
+- typecheck bersih, 61/61 test lulus, `npm run build` hijau.
+- `dist/holidays-2026.json` masih byte-identik dengan `data/`.
+- Disajikan lewat `python3 -m http.server`: `/` 200 `text/html`, link JSON di
+  dalam halaman 200, `holidays-2024.json` 404.
+- Tidak ada link absolut di halaman; 2024/2025/2030 tidak muncul sebagai link.
+- Guard `cmp` yang sama di workflow dijalankan lokal dan lolos.
+
+**Belum aktif**
+
+Deploy baru jalan setelah Settings di repo diarahkan ke Source: GitHub Actions.
+Perlu user yang melakukannya lewat menu Settings, bukan dari kode.
+
+---
+
 ## 2026-09-28 - Halaman dokumentasi di /, build step jadi wajib
 
 **Perubahan**

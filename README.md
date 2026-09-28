@@ -132,6 +132,32 @@ Semua respons - termasuk file statis - memakai envelope `success`, `data`, `meta
 Respons gagal memakai `success: false` dan `error.message` yang menyebut
 penyebabnya, termasuk tahun yang diminta dan tahun yang tersedia.
 
+## Static Page (GitHub Pages)
+
+`npm run build:static-page` menulis `dist/index.html`: dokumentasi untuk jalur
+JSON statis, terpisah dari halaman server. Bedanya bukan kosmetik - di Pages
+tidak ada server, tidak ada API key, tidak ada endpoint, jadi halaman itu
+menjelaskan file dan cara membacanya, bukan request HTTP.
+
+Deploy lewat `.github/workflows/pages.yml`. `dist/` tidak pernah masuk git;
+Actions membangun lalu meng-upload hasilnya.
+
+Deploy dipicu tag yang berakhiran `-github`, bukan push ke `main`:
+
+```bash
+npm version patch --no-git-tag-version   # naikkan package.json ke 0.1.1
+git commit -am "release: 0.1.1"
+git tag v0.1.1-github
+git push origin main --follow-tags
+```
+
+Tag dan versi di `package.json` harus cocok; workflow menolak kalau tidak. Tag
+akhiran `-github` menandai channel distribusi, jadi tag lain dengan versi sama
+tidak menyentuh Pages.
+
+Kalau repo ini di-fork, set Pages ke Source: GitHub Actions dulu. Tanpa itu
+workflow-nya tetap ada tapi tidak ter-deploy.
+
 ## Dokumentasi Interaktif
 
 Buka `http://localhost:3001` setelah server jalan. Halamannya Bahasa Indonesia:
