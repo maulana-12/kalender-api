@@ -4,7 +4,15 @@ Target opsional. Repo ini tetap jalan tanpa Cloudflare - Pages dan Docker
 punya jalur sendiri. Section ini cuma untuk kalau mau API-nya jalan di edge.
 
 Prasyarat: akun Cloudflare (gratis cukup), Node 22.18 ke atas, dan repo ini
-sudah di-clone.
+sudah di-clone dengan dependency ter-install:
+
+```bash
+npm ci
+```
+
+`npm ci` memakai `package-lock.json` apa adanya. `npm install` bisa menaikkan
+versi dependency, dan hasil bundle-nya jadi tidak bisa dibandingkan dengan
+yang di-CI.
 
 ## 1. Login
 
@@ -102,9 +110,16 @@ npx wrangler secret list
 
 ## 5. Deploy
 
+Wrangler membundle sendiri, jadi `build/server.js` tidak dipakai di sini.
+Yang perlu dijaga tetap sama: kode dan data harus lolos test sebelum
+dipublish.
+
 ```bash
 npm run typecheck && npm test && npx wrangler deploy
 ```
+
+Kalau sudah pernah `npm run build`, typecheck dan test-nya sudah termasuk -
+cukup `npx wrangler deploy`.
 
 Test dulu, deploy belakangan. Worker production dan yang lokal menghasilkan
 bundle yang sama persis, tapi data bisa saja rusak di antara dua langkah itu.
@@ -131,8 +146,12 @@ Bundle sekitar 127 KiB, 31 KiB gzip. Worker di plan gratis punya kuota
 Setelah kode atau data berubah:
 
 ```bash
-npm test && npx wrangler deploy
+npm run build && npx wrangler deploy
 ```
+
+`npm run build` melakukan typecheck, test, dan build static. Yang menentukan
+Workers immutable adalah langkah typecheck dan test-nya - `build/server.js`
+dipakai untuk `npm start`, bukan untuk Workers.
 
 Deploy tidak menghapus secret. Tapi kalau `API_KEY` dirotasi karena bocor:
 
