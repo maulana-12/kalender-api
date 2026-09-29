@@ -1,4 +1,5 @@
 import holidays2026 from '../data/holidays-2026.json' with { type: 'json' }
+import holidays2027 from '../data/holidays-2027.json' with { type: 'json' }
 import type { Holiday, YearMeta } from './core/index.ts'
 
 export type YearData = {
@@ -8,6 +9,7 @@ export type YearData = {
 
 const RAW = {
   2026: holidays2026,
+  2027: holidays2027,
 }
 
 /**

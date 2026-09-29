@@ -10,7 +10,25 @@
 > langsung, dan asumsi-asumsinya sudah dikoreksi lewat D-009 sampai D-012.
 > Baca **Bagian 0** dulu. Teks lamanya sengaja dibiarkan supaya bisa dibandingkan,
 > tapi kalau bertentangan dengan Bagian 0, Bagian 0 yang menang.
-**Terakhir diperbarui:** 2026-09-28
+**Terakhir diperbarui:** 2026-09-29
+
+---
+
+## Addendum 2026-09-29 - halaman `/kalender` dan `dist/kalender.html`
+
+Di luar roadmap awal (bagian 8), ditambahkan kalender visual di dua jalur:
+
+- `GET /kalender` di server, dirender dari `dataset.ts`. Bisa ganti tahun
+  (`?year=`), menampilkan setahun penuh terpisah per bulan, atau satu bulan
+  (`?month=`). Tidak butuh API key karena datanya dibaca langsung dari
+  `dataset.ts`, bukan memanggil `/api/*`.
+- `dist/kalender.html` untuk GitHub Pages, tampilan sama tapi datanya dibaca dari
+  file JSON publik saat halaman dibuka, bukan di-bundle.
+
+Aritmetika bulan, nama bulan dan hari, serta validasi tidak ditulis dua kali:
+semuanya dari `core/`. Markup-nya memang dua, karena satu file tidak bisa jalan
+di server dan di browser. Alasan lengkap di D-017 dan D-018, ringkasan
+perubahan di `change-log.md` entri 2026-09-29.
 
 ---
 

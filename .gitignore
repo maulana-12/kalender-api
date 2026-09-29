@@ -5,7 +5,13 @@ build/
 
 # Config per-machine / per-deployment. Salin dari .example, jangan di-commit.
 .env
-wrangler.toml
+# Pola `wrangler.toml` hanya cocok dengan nama persis, jadi wrangler.dev.toml
+# atau wrangler.production.toml akan bocor. `*.example` dikecualikan supaya
+# wrangler.toml.example tetap bisa ter-commit.
+wrangler*.toml
+!*.example
+.dev.vars
+.dev.vars.*
 .wrangler/
 
 .DS_Store

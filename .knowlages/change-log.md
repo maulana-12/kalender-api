@@ -9,6 +9,164 @@ Mencatat perubahan pada **isi repo**. Untuk alasan di balik keputusan, lihat
 
 ---
 
+## 2026-09-29 - Kalender untuk GitHub Pages, data dibaca saat halaman dibuka
+
+**Perubahan**
+
+- `dist/kalender.html` (baru) - kalender visual untuk jalur statis. HTML-nya
+  cuma shell; datanya dibaca dari `./index.json` lalu `./holidays-<tahun>.json`
+  saat halaman dibuka. Tidak ada satu pun tanggal yang ter-bundle.
+- `src/client/static-calendar.ts` (baru) - skrip browser. TypeScript biasa, tanpa
+  framework, di-bundle jadi satu string inline. Fungsi render-nya murni supaya
+  bisa dites tanpa DOM; yang menyentuh `document` cuma entry point paling bawah.
+  File JSON publik divalidasi ulang dengan `validateYear()`.
+- `src/pages/static-calendar.tsx` (baru) - shell dokumennya. `render()` menerima
+  script dari luar, jadi generator yang menentukan isinya.
+- `src/pages/calendar-style.ts` (baru) - stylesheet yang dipakai kedua halaman
+  kalender, satu konstanta.
+- `src/core/calendar.ts` (baru) - `MONTH_NAMES`, `daysInMonth()`,
+  `monthStartWeekday()`, `monthGrid()`. Dipakai server dan klien supaya aritmatika
+  bulan tidak ditulis dua kali.
+- `scripts/build-static-calendar.ts` (baru) - generator. Guard: kalau ada tanggal
+  `YYYY-MM-DD` yang ikut ter-bake, build gagal.
+- `src/pages/calendar.tsx` - `daysInMonth()`/`monthStartWeekday()`/`buildCells()`
+  diganti `monthGrid()` dari core, nama bulan dari core, stylesheet dari modul
+  bersama.
+- `src/pages/static.tsx` - tautan "Kalender" di navigasi dan di bagian catatan
+  pemakaian.
+- `package.json` - script `build:static-calendar`, masuk ke `build`.
+- `.github/workflows/pages.yml` - step `build:static-calendar` dengan
+  `PAGES_BASE_URL` yang sama.
+- `test/core-purity.test.ts` - `./calendar` masuk daftar modul core yang boleh
+  di-import.
+- `test/static-calendar.test.ts` (baru) - 21 test.
+- `README.md` - bagian Static Page dan Dokumentasi Interaktif.
+
+**Kenapa data tidak di-import**
+
+Kalau `data/` ikut ter-bundle ke HTML, setiap publish harus membangun ulang
+`kalender.html`, dan kalau lupa halamannya menampilkan kalender basi. Kalender
+basi lebih berbahaya daripada 404, karena orang menjadwalkannya. Datanya sendiri
+sudah publik di Pages, jadi membacanya saat halaman dibuka justru lebih benar.
+
+**Verifikasi**
+
+- `npm run build` hijau: 109 test, typecheck bersih.
+- Generator menolak kalau tanggal ikut ter-bake.
+- `dist/kalender.html` dijalankan di sandbox Node dengan `fetch` yang membaca
+  `dist/`: 12 bulan, 365 tanggal, 17 libur + 8 cuti, 25 baris rincian, judul
+  terisi 2026, tanpa blok `gagal`.
+- Test parity membandingkan urutan `data-date` versi klien dengan versi server, dan
+  cek tiap class yang dipakai markup punya aturan di stylesheet.
+
+---
+
+## 2026-09-29 - Halaman /kalender yang tidak butuh API key
+
+**Perubahan**
+
+- `src/pages/calendar.tsx` - halaman kalender server-render: setahun penuh
+  terpisah per bulan, satu bulan lewat `?month=`, ganti tahun lewat `?year=`.
+  Tata letak penuh (tanpa batas lebar) dan responsif: satu kolom di layar
+  sempit, bertambah kolom saat layar melebar. Tiap tanggal hanya menampilkan
+  angka dan tanda warna; nama libur/cuti ditulis di daftar rincian di bawah
+  kalender bulannya, bukan di dalam sel tanggal. Sel tanggal diberi bingkai dan
+  jarak agar antar tanggal tidak menyatu, termasuk saat libur berurutan.
+  `daysInMonth()` dan `monthStartWeekday()` diekspor untuk dites langsung.
+- `src/app.tsx` - route `GET /kalender` di luar `/api/*`, jadi tidak lewat
+  `bearerAuth`. Default tahun berjalan kalau ada, kalau tidak tahun terbaru.
+  `400` untuk parameter tidak valid, `404` lewat `missingYear` untuk tahun tanpa
+  data.
+- `src/pages/docs.tsx` - tautan "Kalender" di navigasi.
+- `test/kalender.test.ts` - 11 test: matematika grid (termasuk kabisat dan kolom
+  hari pertama), jumlah libur nasional 2026 (17) dan 2027 (18) serta cuti
+  bersama 8 di keduanya, tanggal spesifik, mode satu bulan, dan penanganan error.
+
+**Verifikasi**
+
+- `npm run build` hijau: 88 test, typecheck bersih.
+- Cek manual `GET /kalender?year=2026&month=3`: libur dan cuti jatuh di tanggal
+  yang benar, tidak ada atribut `undefined` di HTML.
+
+---
+
+## 2026-09-29 - Data 2027 dan jumlah entri per tahun di static page
+
+**Perubahan**
+
+- `data/holidays-2027.json` - 26 entri (18 libur nasional + 8 cuti bersama)
+  hasil transkripsi SKB Menteri Agama, Ketenagakerjaan, dan PANRB
+  No. 1205/2026, 3/2026, 2/2026, ditetapkan 15 September 2026. Belum ada
+  amandemen per tanggal ini.
+- `src/dataset.ts` - daftarkan tahun 2027.
+- `test/skb-2027.test.ts` - kunci tanggal, hari, jenis, jumlah, dan `meta.source`.
+- `src/pages/static.tsx` - `render()` menerima daftar `{ year, count }`, bukan
+  satu angka `totalPerYear`. Tabel menampilkan jumlah tiap tahun.
+- `scripts/build-static-page.ts` - guard "jumlah entri harus sama" dihapus.
+- `test/static-page.test.ts` - test jumlah per tahun; helper baca `count` dari
+  `data/` atau `dist/index.json`.
+- `test/app.test.ts` - test "tahun tanpa data" pakai 2028, test "tahun habis"
+  pindah ke 2027-12-27, ditambah test `next_year_available: true` saat 2026
+  habis tapi 2027 ada.
+
+**Verifikasi**
+
+- `npm run build` hijau: 77 test, typecheck bersih.
+- `cmp data/holidays-2027.json dist/holidays-2027.json` identik.
+- Isi SKB dirujuk dari siaran pers Kemenko PMK dan Setneg, lalu nama hari tiap
+  tanggal dicek ulang terhadap kalender Gregorian lewat `date`.
+
+---
+
+## 2026-09-28 - Static page untuk GitHub Pages, nol dependency baru
+
+**Perubahan**
+
+- `src/pages/static.tsx` - dokumentasi untuk distribusi statis. Sengaja beda dari
+  `docs.tsx`: menjelaskan file dan cara membacanya, bukan endpoint dan header auth.
+  Semua link relatif supaya tidak rusak saat repo di-fork.
+- `scripts/build-static-page.ts` - render ke `dist/index.html`. Script terpisah,
+  bukan digabung ke `build-static.ts`, karena `AGENTS.md` bagian 1 melarang
+  `build-static.ts` menyentuh Hono.
+- `test/static-page.test.ts` - 8 test, total 61.
+- `.github/workflows/pages.yml` - typecheck, test, build statis, guard
+  byte-identik, upload `dist/`, deploy.
+- `.gitignore` - `wrangler.toml` jadi `wrangler*.toml` plus `!*.example`, ditambah
+  `.dev.vars` dan `.dev.vars.*`. Variasi seperti `wrangler.dev.toml` sebelumnya bocor.
+- `package.json` - script `build:static-page`, dan masuk ke `build`.
+
+**Kenapa halaman baru, bukan pakai yang ada**
+
+GitHub Pages tidak menjalankan Node: tidak ada server, tidak ada auth, tidak ada
+request. Halaman server menyebut `Authorization: Bearer` dan kode error HTTP,
+padahal tidak satu pun berlaku di sana. Dua produk dengan aturan berbeda perlu
+dua dokumen.
+
+**Guard di CI**
+
+Workflow membandingkan tiap `data/holidays-*.json` dengan `dist/` pakai `cmp`
+sebelum upload. Kalau `build-static` pernah berubah bentuk sampai mengubah byte,
+deploy berhenti di situ, bukan diam-diam meng-upload data yang berubah.
+
+Tahun dan jumlah entri dibaca dari `dist/index.json`, bukan dari konstanta.
+Jumlah entri yang berbeda antar tahun membuat generator gagal keras.
+
+**Verifikasi**
+
+- typecheck bersih, 61/61 test lulus, `npm run build` hijau.
+- `dist/holidays-2026.json` masih byte-identik dengan `data/`.
+- Disajikan lewat `python3 -m http.server`: `/` 200 `text/html`, link JSON di
+  dalam halaman 200, `holidays-2024.json` 404.
+- Tidak ada link absolut di halaman; 2024/2025/2030 tidak muncul sebagai link.
+- Guard `cmp` yang sama di workflow dijalankan lokal dan lolos.
+
+**Belum aktif**
+
+Deploy baru jalan setelah Settings di repo diarahkan ke Source: GitHub Actions.
+Perlu user yang melakukannya lewat menu Settings, bukan dari kode.
+
+---
+
 ## 2026-09-28 - Halaman dokumentasi di /, build step jadi wajib
 
 **Perubahan**

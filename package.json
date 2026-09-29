@@ -11,12 +11,14 @@
   "scripts": {
     "dev": "npm run build:server && node build/server.js",
     "start": "node build/server.js",
-    "build": "npm run typecheck && npm run test && npm run build:static && npm run build:server",
+    "build": "npm run typecheck && npm run test && npm run build:static && npm run build:static-page && npm run build:static-calendar && npm run build:server",
     "build:static": "node scripts/build-static.ts",
     "build:server": "node scripts/build-server.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build:static-page": "node --experimental-strip-types scripts/build-static-page.ts",
+    "build:static-calendar": "node --experimental-strip-types scripts/build-static-calendar.ts"
   },
   "dependencies": {
     "hono": "4.13.9"

@@ -132,11 +132,47 @@ Semua respons - termasuk file statis - memakai envelope `success`, `data`, `meta
 Respons gagal memakai `success: false` dan `error.message` yang menyebut
 penyebabnya, termasuk tahun yang diminta dan tahun yang tersedia.
 
+## Static Page (GitHub Pages)
+
+`npm run build:static-page` menulis `dist/index.html`: dokumentasi untuk jalur
+JSON statis, terpisah dari halaman server. Bedanya bukan kosmetik - di Pages
+tidak ada server, tidak ada API key, tidak ada endpoint, jadi halaman itu
+menjelaskan file dan cara membacanya, bukan request HTTP.
+
+Deploy lewat `.github/workflows/pages.yml`. `dist/` tidak pernah masuk git;
+Actions membangun lalu meng-upload hasilnya.
+
+`npm run build:static-calendar` menulis `dist/kalender.html`: kalender visual,
+satu tahun penuh dipisah per bulan, bisa ganti tahun dan bisa zoom ke satu
+bulan. Halaman itu **tidak** meng-import data. `data/` di-bundle ke HTML berarti
+setiap publish harus membangun ulang halamannya, dan kalender yang basi lebih
+berbahaya daripada yang tidak ada. Jadi skripnya membaca `./index.json` lalu
+`./holidays-<tahun>.json` langsung dari browser, file JSON yang memang sudah
+publik. Generator menolak build kalau satu pun tanggal ikut ter-bundle.
+
+Deploy dipicu tag yang berakhiran `-github`, bukan push ke `main`:
+
+```bash
+npm version patch --no-git-tag-version   # naikkan package.json ke 0.1.1
+git commit -am "release: 0.1.1"
+git tag v0.1.1-github
+git push origin main --follow-tags
+```
+
+Tag akhiran `-github` menandai channel distribusi, jadi tag lain dengan versi
+yang sama tidak menyentuh Pages.
+
+Kalau repo ini di-fork, set Pages ke Source: GitHub Actions dulu. Tanpa itu
+workflow-nya tetap ada tapi tidak ter-deploy.
+
 ## Dokumentasi Interaktif
 
 Buka `http://localhost:3001` setelah server jalan. Halamannya Bahasa Indonesia:
 cara setup, daftar endpoint, parameter, contoh curl dan JavaScript, kode error,
 dan cara memakai jalur JSON statis tanpa API key.
+
+`http://localhost:3001/kalender` menampilkan kalender yang sama, dirender dari
+server: `?year=` ganti tahun, `?month=` tampilkan satu bulan. Tidak butuh API key.
 
 ## Menjalankan
 

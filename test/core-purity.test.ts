@@ -30,7 +30,7 @@ describe('core purity', () => {
           violations.push(`${file} -> "${specifier}" (paket eksternal)`)
         } else if (isNodeBuiltin) {
           violations.push(`${file} -> "${specifier}" (I/O, harusnya di dataset.ts)`)
-        } else if (!specifier.startsWith('./types') && !specifier.startsWith('./validate') && !specifier.startsWith('./query') && !specifier.startsWith('./index')) {
+        } else if (!specifier.startsWith('./types') && !specifier.startsWith('./validate') && !specifier.startsWith('./query') && !specifier.startsWith('./calendar') && !specifier.startsWith('./index')) {
           violations.push(`${file} -> "${specifier}" (keluar dari core/)`)
         }
       }

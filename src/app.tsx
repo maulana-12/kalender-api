@@ -5,6 +5,7 @@ import { bearerAuth } from 'hono/bearer-auth'
 import { timingSafeEqual } from 'hono/utils/buffer'
 import { getYear, listYears } from './dataset.ts'
 import { DocsPage } from './pages/docs.tsx'
+import { CalendarPage } from './pages/calendar.tsx'
 import {
   countByType,
   dayName,
@@ -93,6 +94,45 @@ app.get('/health', (c) =>
 app.get('/', (c) => {
   const origin = new URL(c.req.url).origin
   return c.html(<DocsPage years={listYears()} origin={origin} />)
+})
+
+app.get('/kalender', (c) => {
+  const years = listYears()
+  const yearParam = c.req.query('year')
+
+  let year: number
+  if (yearParam === undefined) {
+    const now = new Date().getUTCFullYear()
+    year = years.includes(now) ? now : (years[years.length - 1] ?? now)
+  } else {
+    year = Number(yearParam)
+    if (!Number.isInteger(year) || year < 1900 || year > 2999) {
+      return fail(c, 400, `year harus bilangan bulat antara 1900 dan 2999, dapat "${yearParam}"`)
+    }
+  }
+
+  const found = getYear(year)
+  if (found === undefined) return missingYear(c, year)
+
+  const monthParam = c.req.query('month')
+  let month: number | undefined
+  if (monthParam !== undefined) {
+    month = Number(monthParam)
+    if (!Number.isInteger(month) || month < 1 || month > 12) {
+      return fail(c, 400, `month harus bilangan bulat antara 1 dan 12, dapat "${monthParam}"`)
+    }
+  }
+
+  return c.html(
+    <CalendarPage
+      year={found.meta.year}
+      meta={found.meta}
+      holidays={found.data}
+      years={years}
+      today={new Date().toISOString().slice(0, 10)}
+      month={month}
+    />,
+  )
 })
 
 app.get('/api/years', (c) => {
