@@ -9,6 +9,34 @@ Mencatat perubahan pada **isi repo**. Untuk alasan di balik keputusan, lihat
 
 ---
 
+## 2026-09-29 - Data 2027 dan jumlah entri per tahun di static page
+
+**Perubahan**
+
+- `data/holidays-2027.json` - 26 entri (18 libur nasional + 8 cuti bersama)
+  hasil transkripsi SKB Menteri Agama, Ketenagakerjaan, dan PANRB
+  No. 1205/2026, 3/2026, 2/2026, ditetapkan 15 September 2026. Belum ada
+  amandemen per tanggal ini.
+- `src/dataset.ts` - daftarkan tahun 2027.
+- `test/skb-2027.test.ts` - kunci tanggal, hari, jenis, jumlah, dan `meta.source`.
+- `src/pages/static.tsx` - `render()` menerima daftar `{ year, count }`, bukan
+  satu angka `totalPerYear`. Tabel menampilkan jumlah tiap tahun.
+- `scripts/build-static-page.ts` - guard "jumlah entri harus sama" dihapus.
+- `test/static-page.test.ts` - test jumlah per tahun; helper baca `count` dari
+  `data/` atau `dist/index.json`.
+- `test/app.test.ts` - test "tahun tanpa data" pakai 2028, test "tahun habis"
+  pindah ke 2027-12-27, ditambah test `next_year_available: true` saat 2026
+  habis tapi 2027 ada.
+
+**Verifikasi**
+
+- `npm run build` hijau: 77 test, typecheck bersih.
+- `cmp data/holidays-2027.json dist/holidays-2027.json` identik.
+- Isi SKB dirujuk dari siaran pers Kemenko PMK dan Setneg, lalu nama hari tiap
+  tanggal dicek ulang terhadap kalender Gregorian lewat `date`.
+
+---
+
 ## 2026-09-28 - Static page untuk GitHub Pages, nol dependency baru
 
 **Perubahan**

@@ -9,18 +9,24 @@ import { describe, expect, it } from 'vitest'
 // termasuk di checkout yang bersih. `dist/index.json` dipakai hanya sebagai
 // sumber tahun kalau memang ada; kalau belum, test tetap jalan dengan
 // `listYears()` yang jadi sumber kebenaran utama.
-const manifestYears = async (): Promise<{ year: number; file: string }[]> => {
-  if (!existsSync('dist/index.json')) {
-    const { listYears } = await import('../src/dataset.ts')
-    return listYears().map((year) => ({ year, file: `holidays-${year}.json` }))
+const manifestEntries = async (): Promise<{ year: number; count: number; file: string }[]> => {
+  if (existsSync('dist/index.json')) {
+    const manifest = JSON.parse(await readFile('dist/index.json', 'utf8')) as {
+      data: { year: number; count: number; file: string }[]
+    }
+    return manifest.data
   }
-  const manifest = JSON.parse(await readFile('dist/index.json', 'utf8')) as {
-    data: { year: number; file: string }[]
-  }
-  return manifest.data
+  const { listYears } = await import('../src/dataset.ts')
+  return Promise.all(
+    listYears().map(async (year) => {
+      const file = `holidays-${year}.json`
+      const raw = JSON.parse(await readFile(`data/${file}`, 'utf8')) as { meta: { count: number } }
+      return { year, count: raw.meta.count, file }
+    }),
+  )
 }
 
-type Render = (years: number[], total: number, baseUrl?: string | undefined) => string
+type Render = (years: { year: number; count: number }[], baseUrl?: string | undefined) => string
 
 const BUNDLED: { render: Render } = await (async () => {
   const tmp = await mkdtemp(join(tmpdir(), 'kalender-static-test-'))
@@ -39,8 +45,13 @@ const BUNDLED: { render: Render } = await (async () => {
   return mod
 })()
 
+// Satu tahun tetap dipakai untuk test yang cuma butuh halaman valid; isi
+// daftar tahun diuji terpisah lewat ENTRIES yang dibaca dari data/ atau dist/.
+const ENTRIES = await manifestEntries()
+const SINGLE = [{ year: 2026, count: 25 }]
+const page = BUNDLED.render(ENTRIES.map(({ year, count }) => ({ year, count })))
+
 describe('static page untuk GitHub Pages', () => {
-  const page = BUNDLED.render([2026], 25)
 
   it('halaman terpisah dari docs server: tidak ada endpoint dan tidak ada API key', () => {
     // Static page tidak punya server, jadi menyebut /api/ atau header auth
@@ -67,7 +78,7 @@ describe('static page untuk GitHub Pages', () => {
   })
 
   it('dengan baseUrl: canonical, og:url, dan contoh absolut ikut terisi', () => {
-    const withHost = BUNDLED.render([2026], 25, 'https://libur.example.co.id')
+    const withHost = BUNDLED.render(SINGLE, 'https://libur.example.co.id')
 
     expect(withHost).toContain('<link rel="canonical" href="https://libur.example.co.id/">')
     expect(withHost).toContain('og:url" content="https://libur.example.co.id/"')
@@ -79,30 +90,59 @@ describe('static page untuk GitHub Pages', () => {
 
   it('baseUrl dengan trailing slash tidak menghasilkan double slash', () => {
     for (const raw of ['https://a.co.id', 'https://a.co.id/', 'https://a.co.id///']) {
-      const html = BUNDLED.render([2026], 25, raw)
+      const html = BUNDLED.render(SINGLE, raw)
       expect(html).toContain('curl -O https://a.co.id/holidays-2026.json')
       expect(html).not.toContain('a.co.id//holidays')
     }
   })
 
   it('baseUrl kosong berarti tidak diketahui, bukan host kosong', () => {
-    const html = BUNDLED.render([2026], 25, '')
+    const html = BUNDLED.render(SINGLE, '')
     expect(html).not.toContain('rel="canonical"')
     expect(html).not.toContain('https://')
   })
 
-  it('tahun yang dirender harus benar-benar ada di data', async () => {
-    const years = await manifestYears()
-    expect(years.length).toBeGreaterThan(0)
-    for (const entry of years) {
+  it('tahun yang dirender harus benar-benar ada di data', () => {
+    expect(ENTRIES.length).toBeGreaterThan(0)
+    for (const entry of ENTRIES) {
       expect(page).toContain(entry.file)
       expect(page).toContain(String(entry.year))
+    }
+  })
+
+  it('jumlah entri tiap tahun ditampilkan per tahun, bukan satu angka untuk semua', () => {
+    // 2026 punya 25 entri, 2027 punya 26. Halaman harus menampilkan angka
+    // masing-masing, bukan menyeragamkan ke salah satunya.
+    for (const entry of ENTRIES) {
+      expect(page).toContain(`${entry.count} entri`)
     }
   })
 
   it('tahun yang tidak dipublikasikan tidak boleh muncul sebagai link', () => {
     for (const year of [2024, 2025, 2030]) {
       expect(page).not.toContain(`holidays-${year}.json`)
+    }
+  })
+
+  it('contoh jq menyebut field yang benar-benar ada di data', async () => {
+    // Contoh jq yang menyebut field tidak ada akan jalan tanpa error dan
+    // mencetak `null` - pembaca mengira datanya kosong, bukan contohnya yang
+    // salah. Jadi tiap path dikunci ke file aslinya.
+    expect(page).toContain('| jq')
+    expect(page).toContain('.meta.count')
+    expect(page).toContain('.meta.source')
+    expect(page).toContain('is_joint_holiday')
+    expect(page).toContain('is_holiday')
+
+    for (const entry of ENTRIES) {
+      const raw = JSON.parse(
+        await readFile(`data/${entry.file}`, 'utf8'),
+      ) as { data: Record<string, unknown>[]; meta: Record<string, unknown> }
+      for (const field of ['date', 'name', 'is_holiday', 'is_joint_holiday']) {
+        expect(raw.data[0]).toHaveProperty(field)
+      }
+      expect(raw.meta).toHaveProperty('count')
+      expect(raw.meta).toHaveProperty('source')
     }
   })
 
@@ -133,10 +173,10 @@ describe('static page untuk GitHub Pages', () => {
     // `baseUrl` masuk ke `href` dan jadi teks di blok contoh. Nilai rusak dari
     // env atau dari REST API tidak boleh lolos diam-diam.
     for (const bad of ['javascript:alert(1)', 'ftp://x.co.id', 'data:text/html,x']) {
-      expect(() => BUNDLED.render([2026], 25, bad)).toThrow()
+      expect(() => BUNDLED.render(SINGLE, bad)).toThrow()
     }
-    expect(() => BUNDLED.render([2026], 25, 'https://ok.co.id?a=1')).toThrow()
-    expect(() => BUNDLED.render([2026], 25, 'https://ok.co.id#x')).toThrow()
+    expect(() => BUNDLED.render(SINGLE, 'https://ok.co.id?a=1')).toThrow()
+    expect(() => BUNDLED.render(SINGLE, 'https://ok.co.id#x')).toThrow()
   })
 
   it('render() tidak butuh dist/ atau subprocess', () => {
@@ -145,11 +185,11 @@ describe('static page untuk GitHub Pages', () => {
     // Sengaja tidak mengecek keberadaan `dist/`: `npm test` sah dijalankan
     // sebelum ATAU sesudah build, jadi state direktori bukan input yang boleh
     // dipakai assertion.
-    expect(BUNDLED.render([2026], 25)).toContain('<!doctype html>')
-    expect(BUNDLED.render([2026], 25, 'https://a.co.id')).toContain('<!doctype html>')
+    expect(BUNDLED.render(SINGLE)).toContain('<!doctype html>')
+    expect(BUNDLED.render(SINGLE, 'https://a.co.id')).toContain('<!doctype html>')
   })
 
   it('menolak tahun kosong, bukan diam-diam menghasilkan halaman kosong', () => {
-    expect(() => BUNDLED.render([], 25)).toThrow(/minimal satu tahun/)
+    expect(() => BUNDLED.render([])).toThrow(/minimal satu tahun/)
   })
 })

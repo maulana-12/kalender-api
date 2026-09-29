@@ -26,9 +26,13 @@ import type { FC, PropsWithChildren } from 'hono/jsx'
  * diberikan, halaman tetap valid - bagian yang butuh absolutnya dilewati.
  */
 
+export type YearEntry = {
+  year: number
+  count: number
+}
+
 type Props = {
-  years: number[]
-  totalPerYear: number
+  years: YearEntry[]
   /** Host lengkap tanpa trailing slash. Kosong berarti "tidak diketahui". */
   baseUrl?: string | undefined
 }
@@ -71,11 +75,12 @@ function normalizeHost(raw?: string): string | undefined {
   return trimmed.replace(/\/+$/, '')
 }
 
-const STATIC_PAGE: FC<Props> = ({ years, totalPerYear, baseUrl }) => {
+const STATIC_PAGE: FC<Props> = ({ years, baseUrl }) => {
   const terbaru = years[0]
   if (terbaru === undefined) {
     throw new Error('render() butuh minimal satu tahun')
   }
+  const totalTerbaru = terbaru.count
 
   // Dipakai di contoh yang dicopy-paste orang. Kalau hostname belum diketahui,
   // contoh tetap ditulis relatif supaya tidak teaches yang salah.
@@ -105,12 +110,15 @@ const STATIC_PAGE: FC<Props> = ({ years, totalPerYear, baseUrl }) => {
             Ambil satu file, parse JSON-nya, selesai. Tidak ada auth, tidak ada rate limit, tidak
             ada key yang perlu disimpan.
           </p>
-          <Code lang="bash">{`# ${years.length} tahun tersedia: ${years.join(', ')}
+          <Code lang="bash">{`# ${years.length} tahun tersedia: ${years.map((y) => y.year).join(', ')}
 
-curl -O ${contohUrl(fileFor(terbaru))}
-cat ${fileFor(terbaru)}`}</Code>
+# Lihat isinya langsung
+curl -s ${contohUrl(fileFor(terbaru.year))} | jq
+
+# Atau simpan ke file
+curl -O ${contohUrl(fileFor(terbaru.year))}`}</Code>
           <p>Dari browser atau Node, tanpa install apa pun:</p>
-          <Code lang="javascript">{`const res = await fetch('${contohUrl(fileFor(terbaru))}')
+          <Code lang="javascript">{`const res = await fetch('${contohUrl(fileFor(terbaru.year))}')
 if (!res.ok) throw new Error(\`HTTP \${res.status}\`)
 
 const { success, data } = await res.json()
@@ -128,8 +136,8 @@ for (const h of data) {
 
         <Section id="tahun" title="Tahun tersedia">
           <p>
-            Hanya tahun yang SKB final-nya sudah ada yang dipublikasikan. {totalPerYear} entri per
-            tahun: libur nasional plus cuti bersama.
+            Hanya tahun yang SKB final-nya sudah ada yang dipublikasikan. Tiap tahun berisi libur
+            nasional plus cuti bersama; jumlahnya berbeda dan tercantum di kolom Jumlah.
           </p>
           <table>
             <thead>
@@ -143,14 +151,14 @@ for (const h of data) {
               {years.map((y) => (
                 <tr>
                   <td>
-                    <strong>{y}</strong>
+                    <strong>{y.year}</strong>
                   </td>
                   <td>
-                    <a href={`./${fileFor(y)}`}>
-                      <code>{fileFor(y)}</code>
+                    <a href={`./${fileFor(y.year)}`}>
+                      <code>{fileFor(y.year)}</code>
                     </a>
                   </td>
-                  <td>{totalPerYear} entri</td>
+                  <td>{y.count} entri</td>
                 </tr>
               ))}
             </tbody>
@@ -178,8 +186,8 @@ for (const h of data) {
     }
   ],
   "meta": {
-    "year": ${terbaru},
-    "total": ${totalPerYear},
+    "year": ${terbaru.year},
+    "count": ${totalTerbaru},
     "source": "SKB 3 Menteri"
   }
 }`}</Code>
@@ -227,6 +235,34 @@ for (const h of data) {
             </tbody>
           </table>
           <p>
+            Kalau di terminal, <code>jq</code> bisa menarik bagian yang kamu butuh tanpa
+            menulis loop. Yang paling sering dipakai:
+          </p>
+          <Code lang="bash">{`# Tanggal saja, satu per baris
+curl -s ${contohUrl(fileFor(terbaru.year))} | jq -r '.data[].date'
+
+# Tanggal dan nama
+curl -s ${contohUrl(fileFor(terbaru.year))} \\
+  | jq -r '.data[] | "\\(.date)  \\(.name)"'
+
+# Cuti saja, atau libur nasional saja
+curl -s ${contohUrl(fileFor(terbaru.year))} \\
+  | jq -r '.data[] | select(.is_joint_holiday) | .date'
+curl -s ${contohUrl(fileFor(terbaru.year))} \\
+  | jq -r '.data[] | select(.is_holiday) | .date'
+
+# Satu tanggal tertentu - hasilnya nama liburnya, atau kosong
+curl -s ${contohUrl(fileFor(terbaru.year))} \\
+  | jq '.data[] | select(.date == "2026-03-21") | .name'
+
+# Berapa banyak, dan dari SKB mana
+curl -s ${contohUrl(fileFor(terbaru.year))} | jq '.meta.count, .meta.source'`}</Code>
+          <p>
+            <code>-r</code> berarti keluarkan apa adanya tanpa tanda kutip - itu yang bikin
+            hasilnya bisa langsung dipakai lagi, misalnya disimpen ke <code>while read</code>.
+            Tanpa <code>-r</code>, hasilnya JSON dan harus di-parse lagi.
+          </p>
+          <p>
             Mengecek apakah sebuah tanggal libur, cukup bandingkan dengan <code>date</code>:
           </p>
           <Code lang="javascript">{`const hariLibur = new Set(data.map((h) => h.date))
@@ -258,7 +294,7 @@ const isLibur = hariLibur.has('2026-03-21')`}</Code>
           </p>
           <Code lang="python">{`import json, urllib.request
 
-with urllib.request.urlopen("${contohUrl(fileFor(terbaru))}") as r:
+with urllib.request.urlopen("${contohUrl(fileFor(terbaru.year))}") as r:
     hari_libur = json.load(r)["data"]`}</Code>
         </Section>
       </main>
@@ -280,7 +316,7 @@ with urllib.request.urlopen("${contohUrl(fileFor(terbaru))}") as r:
  * `baseUrl` opsional dan di-normalisasi di sini: trailing slash dibuang supaya
  * penggabungannya tidak pernah menghasilkan `https://host//file.json`.
  */
-export const render = (years: number[], totalPerYear: number, baseUrl?: string): string => {
+export const render = (years: YearEntry[], baseUrl?: string): string => {
   // `baseUrl` masuk ke `href` dan jadi teks di blok contoh. Nilai dari env atau
   // dari REST API bisa saja bukan URL, dan `javascript:...` akan lolos jadi
   // `href` yang bisa diklik. Dicek di sini, dekat dengan tempat pakainya, supaya
@@ -307,7 +343,7 @@ export const render = (years: number[], totalPerYear: number, baseUrl?: string):
 
   head.push('</head>', '<body>')
 
-  return [...head, String(STATIC_PAGE({ years, totalPerYear, baseUrl: host })), '</body>', '</html>', ''].join(
+  return [...head, String(STATIC_PAGE({ years, baseUrl: host })), '</body>', '</html>', ''].join(
     '\n'
   )
 }

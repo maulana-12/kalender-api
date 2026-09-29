@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { app } from '../src/app.tsx'
 import holidays2026 from '../data/holidays-2026.json' with { type: 'json' }
+import holidays2027 from '../data/holidays-2027.json' with { type: 'json' }
 
 const KEY = 'kunci-uji'
 const AUTH = { Authorization: `Bearer ${KEY}` }
@@ -117,10 +118,24 @@ describe('GET / (dokumentasi)', () => {
     expect(body).toContain('Bearer')
   })
 
+  it('contoh curl memakai -s dan | jq supaya outputnya bisa dibaca', async () => {
+    const body = await (await call('/')).text()
+
+    // Tanpa `-s`, progress bar curl mengotori output. Tanpa `| jq`, JSON
+    // keluar satu baris panjang. Contoh di halaman adalah yang paling sering
+    // disalin, jadi dua hal itu ikut diuji. Tanda kutip sengaja tidak
+    // dilibatkan: JSX meng-escape-nya jadi `&quot;`, dan yang penting di sini
+    // adalah flag dan pipe-nya.
+    expect(body).toContain('curl -s -H')
+    expect(body).toContain('Authorization: Bearer $API_KEY')
+    expect(body).toContain('| jq')
+  })
+
   it('menampilkan tahun yang benar-benar tersedia, bukan angka karangan', async () => {
     const body = await (await call('/')).text()
 
     expect(body).toContain('2026')
+    expect(body).toContain('2027')
     // 2024 dan 2025 sengaja tidak boleh muncul sebagai "tahun tersedia"
     expect(body).not.toMatch(/years: 2024|years: 2025/)
   })
@@ -156,6 +171,12 @@ describe('GET /api/holidays', () => {
     expect(await res.json()).toEqual(holidays2026)
   })
 
+  it('tahun 2027 juga dilayani, bukan cuma terdaftar di dataset', async () => {
+    const res = await call('/api/holidays?year=2027', { headers: AUTH })
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual(holidays2027)
+  })
+
   it('filter bulan mengembalikan hanya entri bulan itu', async () => {
     const res = await call('/api/holidays?year=2026&month=8', { headers: AUTH })
     const body = await as<YearBody>(res)
@@ -179,7 +200,7 @@ describe('GET /api/holidays', () => {
   })
 
   it('tahun tanpa data TIDAK PERNAH membalas array kosong', async () => {
-    for (const year of [2024, 2025, 2027, 2030]) {
+    for (const year of [2024, 2025, 2028, 2030]) {
       const res = await call(`/api/holidays?year=${year}`, { headers: AUTH })
       expect(res.status, `tahun ${year}`).toBe(404)
     }
@@ -264,11 +285,20 @@ describe('GET /api/upcoming', () => {
   })
 
   it('tahun habis ditandai exhausted, bukan disamarkan jadi array kosong biasa', async () => {
-    const res = await call('/api/upcoming?from=2026-12-26', { headers: AUTH })
+    const res = await call('/api/upcoming?from=2027-12-27', { headers: AUTH })
     const body = await as<UpcomingBody>(res)
 
     expect(body.data).toEqual([])
     expect(body.meta.exhausted).toBe(true)
     expect(body.meta.next_year_available).toBe(false)
+  })
+
+  it('tahun habis tapi tahun berikutnya ada: exhausted tetap jujur, next_year_available true', async () => {
+    const res = await call('/api/upcoming?from=2026-12-26', { headers: AUTH })
+    const body = await as<UpcomingBody>(res)
+
+    expect(body.data).toEqual([])
+    expect(body.meta.exhausted).toBe(true)
+    expect(body.meta.next_year_available).toBe(true)
   })
 })

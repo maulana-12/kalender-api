@@ -8,6 +8,33 @@ Format entri: ID, Judul, Status, Tanggal, Konteks, Keputusan, Konsekuensi, Alter
 
 ---
 
+## D-016 - Static page menampilkan jumlah entri per tahun
+
+- **Status:** Accepted
+- **Supersedes:** D-015, hanya bagian "jumlah entri seragam"
+- **Tanggal:** 2026-09-29
+
+**Konteks**
+D-015 menetapkan generator gagal keras kalau jumlah entri antar tahun berbeda,
+supaya halaman tidak menampilkan satu angka untuk semua tahun. Saat 2027
+dipublikasikan, kenyataannya berbeda: 2026 punya 25 entri, 2027 punya 26. Guard
+itu sekarang menghalangi publish, padahal datanya benar dan sudah sesuai SKB.
+
+**Keputusan**
+`render()` menerima daftar `{ year, count }` dan menampilkan jumlah tiap tahun di
+tabel. Guard "harus sama" dihapus. Angka di contoh JSON memakai tahun terbaru.
+
+**Konsekuensi**
+Halaman menampilkan angka yang benar untuk tiap tahun, bukan menyeragamkan ke
+salah satunya. Signature `render()` berubah dari `(years, total, baseUrl)` jadi
+`(years, baseUrl)`. Tidak ada dependency baru.
+
+**Alternatif**
+Tetap gagal keras (ditolak: memblokir data yang sudah sah). Menyeragamkan ke
+satu angka (ditolak: menampilkan angka yang salah untuk salah satu tahun).
+
+---
+
 ## D-015 - Static page punya komponen sendiri, bukan render ulang docs server
 
 - **Status:** Accepted

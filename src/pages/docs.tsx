@@ -131,14 +131,14 @@ export const DocsPage: FC<{ years: number[]; origin: string }> = ({ years, origi
             <code>/health</code>. Kirim key lewat header <code>Authorization</code> dengan awalan{' '}
             <code>Bearer</code>:
           </p>
-          <Code>{`curl -H "Authorization: Bearer $API_KEY" \\\n  "${origin}/api/holidays?year=2026"`}</Code>
+          <Code>{`curl -s -H "Authorization: Bearer $API_KEY" \\\n  "${origin}/api/holidays?year=2026" | jq`}</Code>
 
           <p>
             Belum punya key? Yang Jalur JSON statis tidak butuh key sama sekali. Kalau kamu cuma
             butuh daftar libur, ambil saja file JSON-nya langsung - gratis, tanpa rate limit, dan
             tidak bisa tiba-tiba mati.:
           </p>
-          <Code>{`curl "${origin}/holidays-2026.json"`}</Code>
+          <Code>{`curl -s "${origin}/holidays-2026.json" | jq`}</Code>
 
           <p class="catatan">
            -years tersedia saat ini: <strong>{years.join(', ')}</strong>. Tahun yang tidak ada di
@@ -206,7 +206,7 @@ export const DocsPage: FC<{ years: number[]; origin: string }> = ({ years, origi
 
         <Section id="contoh" title="Contoh">
           <h3>Cek satu tanggal</h3>
-          <Code>{`curl -H "Authorization: Bearer $API_KEY" \\\n  "${origin}/api/check?date=2026-08-17"`}</Code>
+          <Code>{`curl -s -H "Authorization: Bearer $API_KEY" \\\n  "${origin}/api/check?date=2026-08-17" | jq`}</Code>
           <p>Hasilnya:</p>
           <Code>
             {`{
@@ -225,10 +225,10 @@ export const DocsPage: FC<{ years: number[]; origin: string }> = ({ years, origi
           </Code>
 
           <h3>Libur bulan tertentu</h3>
-          <Code>{`curl -H "Authorization: Bearer $API_KEY" \\\n  "${origin}/api/holidays?year=2026&month=8"`}</Code>
+          <Code>{`curl -s -H "Authorization: Bearer $API_KEY" \\\n  "${origin}/api/holidays?year=2026&month=8" | jq`}</Code>
 
           <h3>Libur yang akan datang</h3>
-          <Code>{`curl -H "Authorization: Bearer $API_KEY" \\\n  "${origin}/api/upcoming?limit=3"`}</Code>
+          <Code>{`curl -s -H "Authorization: Bearer $API_KEY" \\\n  "${origin}/api/upcoming?limit=3" | jq`}</Code>
           <p>
             Pakai dalam JavaScript:
           </p>

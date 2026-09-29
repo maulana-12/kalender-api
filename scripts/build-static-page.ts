@@ -40,22 +40,13 @@ try {
     data: { year: number; count: number }[]
   }
 
-  const years = manifest.data.map((d) => d.year)
-  const counts = manifest.data.map((d) => d.count)
-  const total = counts[0]
-  if (total === undefined) {
+  const years = manifest.data
+  if (years.length === 0) {
     throw new Error('index.json tidak memuat tahun apa pun; tidak ada yang bisa didokumentasikan')
-  }
-  if (new Set(counts).size > 1) {
-    throw new Error(
-      `jumlah entri berbeda antar tahun: ${manifest.data
-        .map((d) => `${d.year}=${d.count}`)
-        .join(', ')}. Halaman ini butuh satu angka untuk semua tahun.`
-    )
   }
 
   const { render } = (await import(bundle)) as {
-    render: (years: number[], total: number, baseUrl?: string) => string
+    render: (years: { year: number; count: number }[], baseUrl?: string) => string
   }
 
   // Opsional. Generator lokal tidak punya hostname, dan itu tidak masalah:
@@ -65,7 +56,7 @@ try {
 
   // Validasi host-nya di dalam `render()`, bukan di sini: satu tempat, dan
   // bisa dites tanpa menjalankan generator.
-  const page = render(years, total, baseUrl)
+  const page = render(years, baseUrl)
 
   if (!page.startsWith('<!doctype html>')) {
     throw new Error('render() tidak mengembalikan dokumen HTML yang lengkap')

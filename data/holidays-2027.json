@@ -1,0 +1,38 @@
+{
+  "success": true,
+  "data": [
+    { "date": "2027-01-01", "name": "Tahun Baru 2027 Masehi", "type": "holiday", "is_holiday": true, "is_joint_holiday": false },
+    { "date": "2027-01-05", "name": "Isra Mikraj Nabi Muhammad saw", "type": "holiday", "is_holiday": true, "is_joint_holiday": false },
+    { "date": "2027-02-05", "name": "Tahun Baru Imlek 2578 Kongzili", "type": "leave", "is_holiday": false, "is_joint_holiday": true },
+    { "date": "2027-02-06", "name": "Tahun Baru Imlek 2578 Kongzili", "type": "holiday", "is_holiday": true, "is_joint_holiday": false },
+    { "date": "2027-03-08", "name": "Hari Suci Nyepi (Tahun Baru Saka 1949)", "type": "holiday", "is_holiday": true, "is_joint_holiday": false },
+    { "date": "2027-03-09", "name": "Idulfitri 1448 H", "type": "leave", "is_holiday": false, "is_joint_holiday": true },
+    { "date": "2027-03-10", "name": "Idulfitri 1448 H", "type": "holiday", "is_holiday": true, "is_joint_holiday": false },
+    { "date": "2027-03-11", "name": "Idulfitri 1448 H", "type": "holiday", "is_holiday": true, "is_joint_holiday": false },
+    { "date": "2027-03-12", "name": "Idulfitri 1448 H", "type": "leave", "is_holiday": false, "is_joint_holiday": true },
+    { "date": "2027-03-15", "name": "Idulfitri 1448 H", "type": "leave", "is_holiday": false, "is_joint_holiday": true },
+    { "date": "2027-03-25", "name": "Wafat Yesus Kristus", "type": "leave", "is_holiday": false, "is_joint_holiday": true },
+    { "date": "2027-03-26", "name": "Wafat Yesus Kristus", "type": "holiday", "is_holiday": true, "is_joint_holiday": false },
+    { "date": "2027-03-28", "name": "Kebangkitan Yesus Kristus (Paskah)", "type": "holiday", "is_holiday": true, "is_joint_holiday": false },
+    { "date": "2027-05-01", "name": "Hari Buruh Internasional", "type": "holiday", "is_holiday": true, "is_joint_holiday": false },
+    { "date": "2027-05-06", "name": "Kenaikan Yesus Kristus", "type": "holiday", "is_holiday": true, "is_joint_holiday": false },
+    { "date": "2027-05-17", "name": "Iduladha 1448 H", "type": "holiday", "is_holiday": true, "is_joint_holiday": false },
+    { "date": "2027-05-18", "name": "Iduladha 1448 H", "type": "leave", "is_holiday": false, "is_joint_holiday": true },
+    { "date": "2027-05-19", "name": "Hari Raya Waisak 2571 BE", "type": "leave", "is_holiday": false, "is_joint_holiday": true },
+    { "date": "2027-05-20", "name": "Hari Raya Waisak 2571 BE", "type": "holiday", "is_holiday": true, "is_joint_holiday": false },
+    { "date": "2027-06-01", "name": "Hari Lahir Pancasila", "type": "holiday", "is_holiday": true, "is_joint_holiday": false },
+    { "date": "2027-06-06", "name": "1 Muharam Tahun Baru Islam 1449 H", "type": "holiday", "is_holiday": true, "is_joint_holiday": false },
+    { "date": "2027-08-15", "name": "Maulid Nabi Muhammad saw", "type": "holiday", "is_holiday": true, "is_joint_holiday": false },
+    { "date": "2027-08-17", "name": "Proklamasi Kemerdekaan Republik Indonesia", "type": "holiday", "is_holiday": true, "is_joint_holiday": false },
+    { "date": "2027-12-24", "name": "Kelahiran Yesus Kristus", "type": "leave", "is_holiday": false, "is_joint_holiday": true },
+    { "date": "2027-12-25", "name": "Kelahiran Yesus Kristus", "type": "holiday", "is_holiday": true, "is_joint_holiday": false },
+    { "date": "2027-12-26", "name": "Isra Mikraj Nabi Muhammad saw", "type": "holiday", "is_holiday": true, "is_joint_holiday": false }
+  ],
+  "meta": {
+    "year": 2027,
+    "count": 26,
+    "source": "SKB Menteri Agama, Ketenagakerjaan, dan PANRB No. 1205/2026, 3/2026, 2/2026",
+    "published": "2026-09-15",
+    "last_updated": "2026-09-29"
+  }
+}
