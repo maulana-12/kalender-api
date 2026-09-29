@@ -142,6 +142,14 @@ menjelaskan file dan cara membacanya, bukan request HTTP.
 Deploy lewat `.github/workflows/pages.yml`. `dist/` tidak pernah masuk git;
 Actions membangun lalu meng-upload hasilnya.
 
+`npm run build:static-calendar` menulis `dist/kalender.html`: kalender visual,
+satu tahun penuh dipisah per bulan, bisa ganti tahun dan bisa zoom ke satu
+bulan. Halaman itu **tidak** meng-import data. `data/` di-bundle ke HTML berarti
+setiap publish harus membangun ulang halamannya, dan kalender yang basi lebih
+berbahaya daripada yang tidak ada. Jadi skripnya membaca `./index.json` lalu
+`./holidays-<tahun>.json` langsung dari browser, file JSON yang memang sudah
+publik. Generator menolak build kalau satu pun tanggal ikut ter-bundle.
+
 Deploy dipicu tag yang berakhiran `-github`, bukan push ke `main`:
 
 ```bash
@@ -162,6 +170,9 @@ workflow-nya tetap ada tapi tidak ter-deploy.
 Buka `http://localhost:3001` setelah server jalan. Halamannya Bahasa Indonesia:
 cara setup, daftar endpoint, parameter, contoh curl dan JavaScript, kode error,
 dan cara memakai jalur JSON statis tanpa API key.
+
+`http://localhost:3001/kalender` menampilkan kalender yang sama, dirender dari
+server: `?year=` ganti tahun, `?month=` tampilkan satu bulan. Tidak butuh API key.
 
 ## Menjalankan
 

@@ -105,6 +105,9 @@ jobs:
       - run: npm run build:static-page
         env:
           PAGES_BASE_URL: ${{ steps.base.outputs.base }}
+      - run: npm run build:static-calendar
+        env:
+          PAGES_BASE_URL: ${{ steps.base.outputs.base }}
 
       # Guard: file JSON harus byte-identik dengan `data/`. Kalau `build-static`
       # pernah berubah bentuk sampai mengubah byte, step ini yang pertama mengetahuinya.

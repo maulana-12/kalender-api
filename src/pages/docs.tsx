@@ -14,6 +14,7 @@ import type { FC, PropsWithChildren } from 'hono/jsx'
  */
 
 const NAV = [
+  { href: '/kalender', label: 'Kalender' },
   { href: '#mulai', label: 'Mulai cepat' },
   { href: '#endpoint', label: 'Endpoint' },
   { href: '#contoh', label: 'Contoh' },

@@ -9,6 +9,87 @@ Mencatat perubahan pada **isi repo**. Untuk alasan di balik keputusan, lihat
 
 ---
 
+## 2026-09-29 - Kalender untuk GitHub Pages, data dibaca saat halaman dibuka
+
+**Perubahan**
+
+- `dist/kalender.html` (baru) - kalender visual untuk jalur statis. HTML-nya
+  cuma shell; datanya dibaca dari `./index.json` lalu `./holidays-<tahun>.json`
+  saat halaman dibuka. Tidak ada satu pun tanggal yang ter-bundle.
+- `src/client/static-calendar.ts` (baru) - skrip browser. TypeScript biasa, tanpa
+  framework, di-bundle jadi satu string inline. Fungsi render-nya murni supaya
+  bisa dites tanpa DOM; yang menyentuh `document` cuma entry point paling bawah.
+  File JSON publik divalidasi ulang dengan `validateYear()`.
+- `src/pages/static-calendar.tsx` (baru) - shell dokumennya. `render()` menerima
+  script dari luar, jadi generator yang menentukan isinya.
+- `src/pages/calendar-style.ts` (baru) - stylesheet yang dipakai kedua halaman
+  kalender, satu konstanta.
+- `src/core/calendar.ts` (baru) - `MONTH_NAMES`, `daysInMonth()`,
+  `monthStartWeekday()`, `monthGrid()`. Dipakai server dan klien supaya aritmatika
+  bulan tidak ditulis dua kali.
+- `scripts/build-static-calendar.ts` (baru) - generator. Guard: kalau ada tanggal
+  `YYYY-MM-DD` yang ikut ter-bake, build gagal.
+- `src/pages/calendar.tsx` - `daysInMonth()`/`monthStartWeekday()`/`buildCells()`
+  diganti `monthGrid()` dari core, nama bulan dari core, stylesheet dari modul
+  bersama.
+- `src/pages/static.tsx` - tautan "Kalender" di navigasi dan di bagian catatan
+  pemakaian.
+- `package.json` - script `build:static-calendar`, masuk ke `build`.
+- `.github/workflows/pages.yml` - step `build:static-calendar` dengan
+  `PAGES_BASE_URL` yang sama.
+- `test/core-purity.test.ts` - `./calendar` masuk daftar modul core yang boleh
+  di-import.
+- `test/static-calendar.test.ts` (baru) - 21 test.
+- `README.md` - bagian Static Page dan Dokumentasi Interaktif.
+
+**Kenapa data tidak di-import**
+
+Kalau `data/` ikut ter-bundle ke HTML, setiap publish harus membangun ulang
+`kalender.html`, dan kalau lupa halamannya menampilkan kalender basi. Kalender
+basi lebih berbahaya daripada 404, karena orang menjadwalkannya. Datanya sendiri
+sudah publik di Pages, jadi membacanya saat halaman dibuka justru lebih benar.
+
+**Verifikasi**
+
+- `npm run build` hijau: 109 test, typecheck bersih.
+- Generator menolak kalau tanggal ikut ter-bake.
+- `dist/kalender.html` dijalankan di sandbox Node dengan `fetch` yang membaca
+  `dist/`: 12 bulan, 365 tanggal, 17 libur + 8 cuti, 25 baris rincian, judul
+  terisi 2026, tanpa blok `gagal`.
+- Test parity membandingkan urutan `data-date` versi klien dengan versi server, dan
+  cek tiap class yang dipakai markup punya aturan di stylesheet.
+
+---
+
+## 2026-09-29 - Halaman /kalender yang tidak butuh API key
+
+**Perubahan**
+
+- `src/pages/calendar.tsx` - halaman kalender server-render: setahun penuh
+  terpisah per bulan, satu bulan lewat `?month=`, ganti tahun lewat `?year=`.
+  Tata letak penuh (tanpa batas lebar) dan responsif: satu kolom di layar
+  sempit, bertambah kolom saat layar melebar. Tiap tanggal hanya menampilkan
+  angka dan tanda warna; nama libur/cuti ditulis di daftar rincian di bawah
+  kalender bulannya, bukan di dalam sel tanggal. Sel tanggal diberi bingkai dan
+  jarak agar antar tanggal tidak menyatu, termasuk saat libur berurutan.
+  `daysInMonth()` dan `monthStartWeekday()` diekspor untuk dites langsung.
+- `src/app.tsx` - route `GET /kalender` di luar `/api/*`, jadi tidak lewat
+  `bearerAuth`. Default tahun berjalan kalau ada, kalau tidak tahun terbaru.
+  `400` untuk parameter tidak valid, `404` lewat `missingYear` untuk tahun tanpa
+  data.
+- `src/pages/docs.tsx` - tautan "Kalender" di navigasi.
+- `test/kalender.test.ts` - 11 test: matematika grid (termasuk kabisat dan kolom
+  hari pertama), jumlah libur nasional 2026 (17) dan 2027 (18) serta cuti
+  bersama 8 di keduanya, tanggal spesifik, mode satu bulan, dan penanganan error.
+
+**Verifikasi**
+
+- `npm run build` hijau: 88 test, typecheck bersih.
+- Cek manual `GET /kalender?year=2026&month=3`: libur dan cuti jatuh di tanggal
+  yang benar, tidak ada atribut `undefined` di HTML.
+
+---
+
 ## 2026-09-29 - Data 2027 dan jumlah entri per tahun di static page
 
 **Perubahan**

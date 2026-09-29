@@ -8,6 +8,105 @@ Format entri: ID, Judul, Status, Tanggal, Konteks, Keputusan, Konsekuensi, Alter
 
 ---
 
+## D-018 - Kalender di GitHub Pages membaca JSON saat dibuka, tidak meng-import
+
+- **Status:** Accepted
+- **Supersedes:** D-015, hanya bagian "Markdown di dalam HTML dengan script kecil untuk render"
+- **Tanggal:** 2026-09-29
+
+**Konteks**
+D-015 menolak `<script>` di halaman statis dengan alasan halaman itu harus pure
+static. Setelah ada kalender (D-017), alasannya tidak berlaku lagi: kalender
+memang butuh runtime, dan runtime-nya sudah ada di browser pembaca.
+
+Yang ditegakkan di sini bukan "tanpa script", tapi **tidak meng-import data**.
+`data/` di-bundle ke HTML berarti setiap publish harus membangun ulang
+`kalender.html`. Kalau lupa, halamannya menampilkan kalender basi - dan
+kalender basi lebih berbahaya daripada 404, karena orang menjadwalkannya.
+`data/` memang sudah dipublikasikan terbuka di GitHub Pages, jadi tidak ada
+alasan menyimpan salinannya lagi di dalam HTML.
+
+**Keputusan**
+`dist/kalender.html` dibuat generator terpisah, `scripts/build-static-calendar.ts`.
+HTML-nya cuma shell; skripnya membacanya dari `./index.json` lalu
+`./holidays-{year}.json` saat halaman dibuka, dan divalidasi ulang dengan
+`validateYear()` dari `core/`.
+
+Generator menolak build kalau ada satu saja tanggal `YYYY-MM-DD` yang ikut
+ter-bundle. Guard-nya di generator, bukan hanya di test, karena yang salah
+publish ke Pages adalah hasil generator.
+
+Tidak ada framework di sisi klien. Skripnya TypeScript biasa, di-bundle
+esbuild (devDependency yang sudah ada) jadi satu string inline. Nol dependency
+baru untuk pembaca.
+
+**Konsekuensi**
+`dist/` punya tiga jenis file: JSON (byte-identik dengan `data/`), `index.json`
+(manifest), dan dua dokumen HTML. `index.html` tetap statis penuh;
+`kalender.html` tidak, dan itu tertulis di `<noscript>`-nya.
+
+Halaman butuh HTTP. dibuka lewat `file://`, `fetch` ditolak browser dan
+halamannya menampilkan pesan yang menyebut penyebabnya - bukan grid kosong.
+
+Markup ditulis dua kali: sekali JSX untuk server, sekali string untuk klien,
+karena satu file tidak bisa jalan di kedua runtime. Yang tidak diulang adalah
+yang rawan salah: aritmatika bulan, nama bulan dan hari, filter per bulan, dan
+validasi - semuanya dari `core/`. Stylesheet-nya satu konstanta,
+`src/pages/calendar-style.ts`, dipakai kedua halaman.
+
+Test parity membandingkan urutan `data-date` versi klien dengan versi server,
+dan cek bahwa tiap class yang dipakai markup punya aturan di stylesheet.
+
+**Alternatif**
+Bundle `data/` ke HTML (ditolak: staleness diam-diam, danger yang paling mahal
+di proyek ini). Pakai framework di sisi klien (ditolak: dependency runtime di
+halaman yang justru harus bisa dibuka tanpa install apa pun). Server-side render
+untuk Pages (ditolak: Pages tidak menjalankan Node).
+
+---
+
+## D-017 - Halaman kalender dirender dari dataset, bukan memanggil API
+
+- **Status:** Accepted
+- **Tanggal:** 2026-09-29
+
+**Konteks**
+Diminta halaman kalender di `/kalender` yang bisa ganti tahun, menampilkan satu
+tahun penuh terpisah per bulan, menandai hari libur, dan bisa menunjukkan satu
+bulan saja. Keinginan awalnya halaman bisa dipakai tanpa API key, idealnya
+"hanya dari hostname yang sama".
+
+Diputuskan lebih dulu bahwa pembatasan "same hostname only" tidak bisa
+ditegakkan: `Origin` sering tidak dikirim browser pada GET same-origin, header
+`Referer`/`Origin` bisa dipalsukan curl/Postman, dan CORS saat ini `origin: '*'`.
+Selain itu data yang sama sudah dipublikasikan terbuka di GitHub Pages.
+
+**Keputusan**
+Halaman dirender di server dari `dataset.ts`, tidak memanggil `/api/*` sama
+sekali. Route `GET /kalender` di `src/app.tsx`, komponen `src/pages/calendar.tsx`.
+Data masuk lewat props, sama seperti `docs.tsx` dan `static.tsx`.
+
+- `?year=` ganti tahun. Default: tahun berjalan kalau datanya ada, kalau tidak
+  tahun terbaru yang tersedia.
+- `?month=` tampilkan satu bulan saja.
+- Navigasi lewat link biasa, jadi halaman tetap berfungsi tanpa JavaScript.
+- Tanda: libur nasional, cuti bersama, dan akhir pekan.
+- Error mengikuti aturan yang sudah ada: `400` untuk parameter tidak valid,
+  `404` lewat `missingYear` untuk tahun yang belum punya data.
+
+**Konsekuensi**
+`/kalender` berada di luar `/api/*`, jadi tidak melewati `bearerAuth` dan tetap
+terbuka tanpa key. Fungsi layout murni `daysInMonth` dan `monthStartWeekday`
+diekspor supaya bisa dites langsung. Nol dependency baru.
+
+**Alternatif**
+Memanggil `/api/holidays` dari browser (ditolak: butuh key, dan key di halaman
+publik bisa dilihat siapa saja). Membatasi akses hanya hostname sendiri
+(ditolak: tidak bisa ditegakkan, lihat Konteks). Membuat halaman terpisah di
+Pages (ditolak: Pages tidak punya data dinamis per tahun tanpa regenerate).
+
+---
+
 ## D-016 - Static page menampilkan jumlah entri per tahun
 
 - **Status:** Accepted

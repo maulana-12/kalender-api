@@ -101,6 +101,7 @@ const STATIC_PAGE: FC<Props> = ({ years, baseUrl }) => {
           <a href="#format">Format</a>
           <a href="#cara-pakai">Cara pakai</a>
           <a href="#bicara">Bahasa lain</a>
+          <a href="kalender.html">Kalender</a>
         </nav>
       </header>
 
@@ -283,7 +284,14 @@ const isLibur = hariLibur.has('2026-03-21')`}</Code>
               bisa berubah di tempat.
             </p>
           </div>
-          <p>Kalau butuh query dinamis, filter per bulan, atau hari terdekat dari sekarang, itu jalur API-nya.</p>
+          <p>
+            Kalau butuh query dinamis, filter per bulan, atau hari terdekat dari sekarang, itu jalur API-nya.
+          </p>
+          <p>
+            Kalau cuma mau melihatnya, ada <a href="kalender.html">kalender visual</a> - satu tahun penuh
+            dipisah per bulan. Halaman itu membaca file JSON yang sama dengan halaman ini, langsung dari
+            browser, jadi tidak ada yang perlu di-build ulang bersama datanya.
+          </p>
         </Section>
 
         <Section id="bicara" title="Bahasa lain">
